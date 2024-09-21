@@ -1,3 +1,11 @@
+eigen_test_list.txt
+eigen_train_list.txt
+eigen_val_list.txt
+dataset/
+.vscode/
+Learning-Monocular-Depth-by-Stereo-master/
+guo/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
