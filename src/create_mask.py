@@ -15,4 +15,11 @@ import torchvision.transforms as T
 img = torchvision.io.read_image('baseline_patch.png')
 print(img)
 
+for i in range(img.size(0)):
+    for k in range(img.size(1)):
+        for l in range(img.size(2)):
+            if(img[k-112]**2 + img[l-112]**2 > 112**2):
+                img[i, k, l] = 0
+
+print(img)
 
