@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 import time
 import os
+import random
+from torchvision.transforms import v2
 from models.adversarial_models import AdversarialModels
 from utils.dataloader import LoadFromImageFile
 from utils.utils import makedirs, to_cuda_vars, format_time
@@ -42,8 +44,10 @@ def main():
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = True
 
-    # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the patch
-    train_transform = 
+    # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the background
+    train_transform = v2.GaussianNoise(mean=0.0, sigma=0.1, clip=True)(
+        v2.ColorJitter(brightness=random.random()/2, contrast=random.random(), hue=random.random())
+    )
     
     train_set = LoadFromImageFile(
         args.data_root,

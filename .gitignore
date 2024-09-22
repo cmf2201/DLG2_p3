@@ -5,6 +5,7 @@ dataset/
 .vscode/
 Learning-Monocular-Depth-by-Stereo-master/
 guo/
+slurm_out/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

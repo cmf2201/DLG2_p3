@@ -4,7 +4,8 @@
 #SBATCH --mail-type=ALL
 
 #SBATCH -J guo
-#SBATCH --error=err%j.err
+#SBATCH --output=slurm_out/out%j.out
+#SBATCH --error=slurm_out/err%j.err
 
 #SBATCH -N 1
 #SBATCH -n 8

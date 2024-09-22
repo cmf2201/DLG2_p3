@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 import torch
+from torchvision.transforms import v2
 import numpy as np
 import os
 import cv2
@@ -95,3 +96,23 @@ class SingleImageLoader(BaseDataset):
 
     def __len__(self):
         return 1
+
+# verify the dataloader
+if __name__ == "__main__":
+    train_transform = v2.GaussianNoise(mean=0.0, sigma=0.1, clip=True)(
+        v2.ColorJitter(brightness=random.random()/2, contrast=random.random(), hue=random.random()/2)
+    )
+
+    train_set = LoadFromImageFile(
+        '../Src/input_img',
+        '../Src/list/test_list.txt',
+        train=True,
+        monocular=True,
+        transform=train_transform,
+        extension=".jpg"
+    )
+
+    for i, sample in enumerate(train_set):
+        print("Image: " + str(i))
+        print(sample['left'].size)
+        print("\n\n\n")
