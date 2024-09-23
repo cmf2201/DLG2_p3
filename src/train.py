@@ -9,6 +9,7 @@ from utils.dataloader import LoadFromImageFile
 from utils.utils import makedirs, to_cuda_vars, format_time
 from tqdm import tqdm
 import warnings
+import torch.nn as nn
 warnings.simplefilter('ignore')
 
 parser = argparse.ArgumentParser(description='Generating Adversarial Patches')
@@ -98,10 +99,17 @@ def main():
 
                 # apply transformed patch to clean image
                 
-
+                
                 # Loss
                 # calculate the loss function here
-
+                region = # wherever we place mask
+                for k in region.size(0):
+                    for i in region.size(1):
+                        for j in region.size(2):
+                            ep_disp_loss = nn.L1loss(15, original_disp[k,i,j], reduction = "sum")
+                            ep_nps_loss =  
+                            ep_tv_loss = 
+                            ep_loss = ep_disp_loss + ep_nps_loss + ep_tv_loss
                 ep_nps_loss += nps_loss.detach().cpu().numpy()
                 ep_tv_loss += tv_loss.detach().cpu().numpy()
                 ep_disp_loss += disp_loss.detach().cpu().numpy()
