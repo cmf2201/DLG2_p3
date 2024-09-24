@@ -102,6 +102,7 @@ def main():
                 
                 # Loss
                 # calculate the loss function here
+                c = torch.range(0, 255) # vector of printable colors
                 region = # wherever we place mask
                 for k in region.size(0):
                     for i in region.size(1):
