@@ -108,6 +108,7 @@ def main():
                     for i in region.size(1):
                         for j in region.size(2):
                             ep_disp_loss = nn.L1loss(15, original_disp[k,i,j], reduction = "sum") + ep_disp_loss
+                            nps = torch.tensor(img[k][i][j], something)
                             ep_nps_loss =  
                             ep_tv_loss = 
                             ep_loss = ep_disp_loss + ep_nps_loss + ep_tv_loss
