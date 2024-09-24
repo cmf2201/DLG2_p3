@@ -14,11 +14,11 @@ def make_nograd_func(func):
 
 
 class AdversarialModels():
-    def __init__(self, args):
+    def __init__(self, args, device):
         self.args = args
         if 'distill' in self.args.model:
-            self.distill = DistillModel(require_grad=True).cuda().eval()
-            self.fix_distill = DistillModel(require_grad=False).cuda().eval()
+            self.distill = DistillModel(require_grad=True).to(device).eval()
+            self.fix_distill = DistillModel(require_grad=False).to(device).eval()
             print('=> Load Guo\'s model')
 
     def load_ckpt(self):
@@ -56,8 +56,9 @@ class DistillModel(torch.nn.Module):
 
 
 def CreateDistillWeight(path):
-    model = DistillModel().cuda()
-    original_model = torch.nn.DataParallel(DistillModel()).cuda()
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model = DistillModel().to(device)
+    original_model = torch.nn.DataParallel(DistillModel()).to(device)
     state_dict = torch.load(path)
     original_model.load_state_dict(state_dict["model"])
 

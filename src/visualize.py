@@ -3,8 +3,8 @@ import argparse
 import cv2
 import numpy as np
 import os
-import utils.custom_transforms as transformer
-from utils.patch_transformer import Adversarial_Patch
+# import utils.custom_transforms as transformer
+# from utils.patch_transformer import Adversarial_Patch
 from models.adversarial_models import AdversarialModels
 from utils.utils import makedirs, to_cuda_vars
 from utils.dataloader import SingleImageLoader
@@ -43,10 +43,11 @@ def main():
     torch.backends.cudnn.benchmark = True
 
     # DataLoader
-    test_transform = transformer.Compose([
-        transformer.ResizeImage(h=args.height, w=args.width),
-        transformer.ArrayToTensor()
-    ])
+    # test_transform = transformer.Compose([
+    #     transformer.ResizeImage(h=args.height, w=args.width),
+    #     transformer.ArrayToTensor()
+    # ])
+    test_transform = None
 
     test_set = SingleImageLoader(
         img_path=args.img_path,

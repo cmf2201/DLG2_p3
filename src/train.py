@@ -1,10 +1,11 @@
 import torch
+import torchvision
 import argparse
-import cv2
 import numpy as np
 import time
 import os
 from models.adversarial_models import AdversarialModels
+from torchvision.transforms import v2
 from utils.dataloader import LoadFromImageFile
 from utils.utils import makedirs, to_cuda_vars, format_time
 from tqdm import tqdm
@@ -15,7 +16,7 @@ parser = argparse.ArgumentParser(description='Generating Adversarial Patches')
 parser.add_argument('--data_root', type=str, help='path to dataset', default='Src/input_img')
 parser.add_argument('--train_list', type=str, default='Src/list/test_list.txt')
 parser.add_argument('--print_file', type=str, default='Src/list/printable30values.txt')
-parser.add_argument('--distill_ckpt', type=str, default="models/guo/distill_model.ckpt")
+parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
 parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=2)
@@ -41,9 +42,11 @@ def main():
 
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = True
+    torch.cuda.empty_cache()
+
 
     # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the patch
-    train_transform = 
+    train_transform = None
     
     train_set = LoadFromImageFile(
         args.data_root,
@@ -66,11 +69,16 @@ def main():
 
     print('===============================')
     # Attacked Models
-    models = AdversarialModels(args)
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cuda:2')
+    print(torch.cuda.is_available())
+    models = AdversarialModels(args, device)
     models.load_ckpt()
 
     # Patch and Mask
     # Initialize a random patch image
+    patch_cpu = torchvision.io.read_image("/home/skushwaha/RBE474X/DeepLearningPart2/DLG2_p3/src/baseline_patch.png")
+    mask_cpu = torchvision.io.read_image("/home/skushwaha/RBE474X/DeepLearningPart2/DLG2_p3/src/mask.png")
+
     
     # Optimizer
     # pass the patch to the optimizer
@@ -87,18 +95,18 @@ def main():
 
         for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch {epoch}', total=len(train_loader), leave=False):
             with torch.autograd.detect_anomaly():
-                sample = to_cuda_vars(sample)  # send item to gpu
+                sample = to_cuda_vars(sample, device)  # send item to gpu
                 sample.update(models.get_original_disp(sample))  # get non-attacked disparity
 
                 img, original_disp = sample['left'], sample['original_distill_disp']
-                patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
+                patch, mask = patch_cpu.to(device), mask_cpu.to(device)
 
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
-                patch_t, mask_t
+                patch_t, mask_t = patch, mask
 
                 # apply transformed patch to clean image
                 
-
+                img.paste(patch,(int(img.width/2),int(img.height/2)))
                 # Loss
                 # calculate the loss function here
 
