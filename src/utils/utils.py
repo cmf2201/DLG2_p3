@@ -7,11 +7,11 @@ def makedirs(save_path):
     os.makedirs(save_path, exist_ok=True)
 
 
-def to_cuda_vars(vars_dict, device):
+def to_cuda_vars(vars_dict):
     new_dict = {}
     for k, v in vars_dict.items():
         if isinstance(v, torch.Tensor):
-            new_dict[k] = v.float().to(device)
+            new_dict[k] = v.float().cuda()
     return new_dict
 
 

@@ -1,4 +1,7 @@
+from typing import OrderedDict
 import torch
+from torch import nn
+
 try:
     from .guo.monocular_model import MonocularVGG16
 except ImportError:
@@ -14,18 +17,21 @@ def make_nograd_func(func):
 
 
 class AdversarialModels():
-    def __init__(self, args, device):
+    def __init__(self, args):
         self.args = args
         if 'distill' in self.args.model:
-            self.distill = DistillModel(require_grad=True).to(device).eval()
-            self.fix_distill = DistillModel(require_grad=False).to(device).eval()
+            # self.distill = nn.DataParallel(DistillModel(require_grad=True)).cuda().eval()
+            # self.fix_distill = nn.DataParallel(DistillModel(require_grad=False)).cuda().eval()
+            self.distill = DistillModel(require_grad=True).cuda().eval()
+            self.fix_distill = DistillModel(require_grad=False).cuda().eval()
             print('=> Load Guo\'s model')
 
     def load_ckpt(self):
         if hasattr(self, 'distill'):
             ckpt = torch.load(self.args.distill_ckpt)
-            self.distill.load_state_dict(ckpt['model'])
-            self.fix_distill.load_state_dict(ckpt['model'])
+            new_ckpt = OrderedDict([(k[7:], v) for k, v in ckpt['model'].items()])
+            self.distill.load_state_dict(new_ckpt)
+            self.fix_distill.load_state_dict(new_ckpt)
             print('=> Load Guo\'s model weight')
 
     @make_nograd_func
@@ -56,9 +62,8 @@ class DistillModel(torch.nn.Module):
 
 
 def CreateDistillWeight(path):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = DistillModel().to(device)
-    original_model = torch.nn.DataParallel(DistillModel()).to(device)
+    model = DistillModel().cuda()
+    original_model = torch.nn.DataParallel(DistillModel()).cuda()
     state_dict = torch.load(path)
     original_model.load_state_dict(state_dict["model"])
 
