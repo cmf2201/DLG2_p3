@@ -6,6 +6,7 @@ import time
 import os
 from models.adversarial_models import AdversarialModels
 from torchvision.transforms import v2
+from torchvision.transforms import ToPILImage
 from utils.dataloader import LoadFromImageFile
 from utils.utils import makedirs, to_cuda_vars, format_time
 from tqdm import tqdm
@@ -33,6 +34,7 @@ parser.add_argument('--model', nargs='*', type=str, default='distill', choices=[
 parser.add_argument('--name', type=str, help='output directory', default="result")
 args = parser.parse_args()
 
+to_image = ToPILImage()
 
 def main():
     save_path = 'Dst/checkpoints/' + args.name
@@ -116,14 +118,21 @@ def main():
                 img, original_disp = sample['left'], sample['original_distill_disp']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
+                orig = to_image(original_disp)
+                orig.convert("RGB")
+                orig.save('original_disp.png')
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
                 patch_t, mask_t = patch, mask
 
                 # apply transformed patch to clean image
                 
-                img.paste(patch,(int(img.width/2),int(img.height/2)))
+                #img.paste(patch,(int(img.width/2),int(img.height/2)))
                 # Loss
                 # calculate the loss function here
+                nps_loss = torch.Tensor([0])
+                tv_loss = torch.Tensor([0])
+                disp_loss = torch.Tensor([0])
+                loss = nps_loss + tv_loss + disp_loss
 
                 ep_nps_loss += nps_loss.detach().cpu().numpy()
                 ep_tv_loss += tv_loss.detach().cpu().numpy()

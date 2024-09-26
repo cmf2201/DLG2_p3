@@ -26,7 +26,6 @@ class BaseDataset(Dataset):
             raise Exception("If the extension is different, set an argumentthe \"extension\" when you call dataloaders \"e.g. LoadFromImageFile\"")
         img = self.resize_img(img, 512, 256)
         img = torch.from_numpy(img)
-        print(img)
         return img
 
     def resize_img(self, img, width, height):
