@@ -21,7 +21,7 @@ parser.add_argument('--height', type=int, help='input image height', default=256
 parser.add_argument('--width', type=int, help='input image width', default=512)
 parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=2)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
-parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-3)
+parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=40)
 parser.add_argument('--seed', type=int, help='seed for random functions, and network initialization', default=0)
 parser.add_argument('--patch_size', type=int, help='Resolution of patch', default=256)
@@ -85,6 +85,19 @@ def main():
     optimizer = torch.optim.Adam([patch_cpu], lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
 
+    printable_colors = []
+    printable_color_lines = open('Src/list/printable30values.txt').readlines()
+    for line in printable_color_lines:
+        string_color_array = line.strip()
+        string_color_array = string_color_array.split(',')
+
+        color_array = []
+        for color_float in string_color_array:
+            color_array.append(float(color_float))
+
+        printable_colors.append(color_array)
+    printable_colors = torch.Tensor(printable_colors)
+
     # Train
     print('===============================')
     print("Start training ...")
@@ -95,7 +108,9 @@ def main():
 
         for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch {epoch}', total=len(train_loader), leave=False):
             with torch.autograd.detect_anomaly():
+                #sample.permute(0, 3, 1, 2)
                 sample = to_cuda_vars(sample)  # send item to gpu
+
                 sample.update(models.get_original_disp(sample))  # get non-attacked disparity
 
                 img, original_disp = sample['left'], sample['original_distill_disp']

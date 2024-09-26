@@ -37,8 +37,10 @@ class AdversarialModels():
     @make_nograd_func
     def get_original_disp(self, sample):
         add_sample = {}
+        # use permute to shift it to (B, C, H, W) 
+        # currently (B, H, W, C)
         if 'distill' in self.args.model:
-            distill_disp = self.fix_distill(sample['left'])
+            distill_disp = self.fix_distill(sample['left'].permute(0,3,1,2))
             add_sample.update({"original_distill_disp": distill_disp.detach()})
         return add_sample
 
