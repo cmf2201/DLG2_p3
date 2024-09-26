@@ -20,7 +20,7 @@ parser.add_argument('--print_file', type=str, default='Src/list/printable30value
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=2)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=1)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=40)
@@ -118,8 +118,10 @@ def main():
                 img, original_disp = sample['left'], sample['original_distill_disp']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
-                orig = to_image(original_disp)
-                orig.convert("RGB")
+                orig = torch.squeeze(img, 0)
+                orig = orig.permute(2, 0, 1)
+                orig = to_image(orig)
+                orig.convert("L")
                 orig.save('original_disp.png')
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
                 patch_t, mask_t = patch, mask
