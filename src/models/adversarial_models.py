@@ -1,5 +1,7 @@
 from typing import OrderedDict
 import torch
+import cv2
+from torchvision.transforms import ToPILImage
 from torch import nn
 
 try:
@@ -7,6 +9,7 @@ try:
 except ImportError:
     from guo.monocular_model import MonocularVGG16
 
+to_image = ToPILImage()
 
 def make_nograd_func(func):
     def wrapper(*f_args, **f_kwargs):
@@ -41,6 +44,8 @@ class AdversarialModels():
         # currently (B, H, W, C)
         if 'distill' in self.args.model:
             distill_disp = self.fix_distill(sample['left'].permute(0,3,1,2))
+            orig = to_image(sample['left'][0])
+            orig.save('original_disp_in_get_orig.png')
             add_sample.update({"original_distill_disp": distill_disp.detach()})
         return add_sample
 

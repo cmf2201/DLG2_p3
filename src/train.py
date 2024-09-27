@@ -119,10 +119,10 @@ def main():
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
                 orig = torch.squeeze(img, 0)
-                orig = orig.permute(2, 0, 1)
-                orig = to_image(orig)
-                orig.convert("L")
-                orig.save('original_disp.png')
+                # orig = orig.permute(2, 0, 1)
+                # orig = to_image(orig)
+                # orig.convert("RGB")
+                # orig.save('original_disp.png')
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
                 patch_t, mask_t = patch, mask
 
