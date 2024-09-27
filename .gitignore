@@ -1,9 +1,4 @@
-.vscode/
-dataset/
-Dataset/
-Learning-Monocular-Depth-by-Stereo-master/
-guo/
-suki.sh
+# moved to bottom
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -170,7 +165,12 @@ cython_debug/
 
 
 # Ignore Guo's repo as it is quite large, and does not need to be on our github.
-src/models
+.vscode/
+dataset/
+Dataset/
+Learning-Monocular-Depth-by-Stereo-master/
+guo/
+suki.sh
 src/repository
 src/envCreate.sh
 src/*.err

@@ -5,6 +5,7 @@ import numpy as np
 import time
 import os
 from models.adversarial_models import AdversarialModels
+from models.loss_model import AdversarialLoss
 from torchvision.transforms import v2
 from torchvision.transforms import ToPILImage
 from utils.dataloader import LoadFromImageFile
@@ -79,10 +80,13 @@ def main():
     models = AdversarialModels(args)
     models.load_ckpt()
 
+    # Loss
+    loss_md = AdversarialLoss(args)
+
     # Patch and Mask
     # Initialize a random patch image
-    patch_cpu = torchvision.io.read_image("/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
-    mask_cpu = torchvision.io.read_image("/home/ctnguyen/neural_nemesis/DLG2_p3/src/mask.png")
+    patch_cpu = torchvision.io.read_image("/home/cmfrench/RBE474X/DLG2_p3/src/baseline_patch.png")
+    mask_cpu = torchvision.io.read_image("/home/cmfrench/RBE474X/DLG2_p3/src/mask.png")
 
     
     # Optimizer
@@ -115,7 +119,7 @@ def main():
             with torch.autograd.detect_anomaly():
                 #sample.permute(0, 3, 1, 2)
                 sample = to_cuda_vars(sample)  # send item to gpu
-
+                
                 sample.update(models.get_original_disp(sample))  # get non-attacked disparity
 
                 img, original_disp = sample['left'], sample['original_distill_disp']
@@ -136,13 +140,16 @@ def main():
                 # apply transformed patch to clean image
                 
                 #img.paste(patch,(int(img.width/2),int(img.height/2)))
+                
                 # Loss
-                # calculate the loss function here
-                nps_loss = torch.Tensor([0])
-                tv_loss = torch.Tensor([0])
-                disp_loss = torch.Tensor([0])
-                loss = nps_loss + tv_loss + disp_loss
+                # calculate the distance loss
+                disp_loss = torch.zeros(mask_cpu.size(), requires_grad=True)
+                # loss class calulates nps_loss and tv_loss
+                loss = loss_md.forward(torch.zeros(mask_cpu.size(), requires_grad=True),disp_loss)
+                nps_loss = loss_md.nps_loss
+                tv_loss = loss_md.tv_loss
 
+                # Used to display the loss of the given epoch.
                 ep_nps_loss += nps_loss.detach().cpu().numpy()
                 ep_tv_loss += tv_loss.detach().cpu().numpy()
                 ep_disp_loss += disp_loss.detach().cpu().numpy()
