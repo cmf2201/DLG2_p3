@@ -1,12 +1,10 @@
-
+.vscode/
+dataset/
 Dataset/
 Learning-Monocular-Depth-by-Stereo-master/
 guo/
-eigen_test_list.txt
-eigen_train_list.txt
-eigen_val_list.txt
 suki.sh
-baseline_patch.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -153,7 +151,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
+envCreate.sh
 # Pyre type checker
 .pyre/
 

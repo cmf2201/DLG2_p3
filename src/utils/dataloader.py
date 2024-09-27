@@ -4,8 +4,12 @@ import numpy as np
 import os
 import cv2
 import random
+from torchvision.io import read_image
+from torchvision.transforms import ToPILImage
+from torchvision.transforms import v2
 cv2.setNumThreads(1)
 
+to_image = ToPILImage()
 
 class BaseDataset(Dataset):
     def __init__(self, image_list_file):
@@ -20,10 +24,16 @@ class BaseDataset(Dataset):
         return image_file_list
 
     def load_image(self, path):
-        img = cv2.imread(path)
+        # img = cv2.imread(path)
+        # cv2.imwrite("cv2image.png", img)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = read_image(path)
         if img is None:
             print("not finding {}.".format(path))
             raise Exception("If the extension is different, set an argumentthe \"extension\" when you call dataloaders \"e.g. LoadFromImageFile\"")
+        # img = self.resize_img(img, 512, 256)
+        # img = torch.from_numpy(img)
+        img = v2.Resize(size=(256,512))(img)
         return img
 
     def resize_img(self, img, width, height):
