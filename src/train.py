@@ -8,9 +8,12 @@ from models.adversarial_models import AdversarialModels
 from torchvision.transforms import v2
 from torchvision.transforms import ToPILImage
 from utils.dataloader import LoadFromImageFile
-from utils.utils import makedirs, to_cuda_vars, format_time
+from utils.utils import *
 from tqdm import tqdm
 import warnings
+from PIL import Image
+import matplotlib.pyplot as plt
+
 warnings.simplefilter('ignore')
 
 parser = argparse.ArgumentParser(description='Generating Adversarial Patches')
@@ -118,10 +121,14 @@ def main():
                 img, original_disp = sample['left'], sample['original_distill_disp']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
-                orig = torch.squeeze(img, 0)
-                # orig = orig.permute(2, 0, 1)
-                # orig = to_image(orig)
-                # orig.convert("RGB")
+                orig = original_disp[0]
+                orig = to_image(orig)
+
+                image_array = np.array(orig)
+                plt.imshow(image_array, cmap='hot', interpolation='nearest')
+                plt.colorbar() # Add a colorbar to interpret values
+                plt.savefig('heatmap.png')
+
                 # orig.save('original_disp.png')
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
                 patch_t, mask_t = patch, mask

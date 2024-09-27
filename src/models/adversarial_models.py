@@ -42,10 +42,9 @@ class AdversarialModels():
         add_sample = {}
         # use permute to shift it to (B, C, H, W) 
         # currently (B, H, W, C)
+        #.permute(0,3,1,2)
         if 'distill' in self.args.model:
-            distill_disp = self.fix_distill(sample['left'].permute(0,3,1,2))
-            orig = to_image(sample['left'][0])
-            orig.save('original_disp_in_get_orig.png')
+            distill_disp = self.fix_distill(sample['left']) / 255
             add_sample.update({"original_distill_disp": distill_disp.detach()})
         return add_sample
 

@@ -12,3 +12,18 @@ pil_image = Image.fromarray(image_rgb)
 
 # Save the PIL image to a file
 pil_image.save('output_image.jpg')  # You can change the file format and name as needed
+
+from PIL import Image
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Import image
+image = Image.open('imageinimage.png').convert('L')
+
+# Convert to Numpy array
+image_array = np.array(image)
+
+# Create Heatmap
+plt.imshow(image_array, cmap='hot', interpolation='nearest')
+plt.colorbar() # Add a colorbar to interpret values
+plt.savefig('heatmap.png')

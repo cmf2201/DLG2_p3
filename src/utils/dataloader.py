@@ -34,10 +34,6 @@ class BaseDataset(Dataset):
         # img = self.resize_img(img, 512, 256)
         # img = torch.from_numpy(img)
         img = v2.Resize(size=(256,512))(img)
-
-        orig = to_image(img)
-        orig.convert("RGB")
-        orig.save('original_disp.png')
         return img
 
     def resize_img(self, img, width, height):

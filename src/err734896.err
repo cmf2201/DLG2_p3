@@ -1,36 +1,0 @@
-Loading miniconda3/24.7.1/3q6zf43
-  Loading requirement: gcc-runtime/13.2.0/yimvxxm
-Loading cuda/12.5.1/6wffrw2
-  Loading requirement: libiconv/1.17/pmxhi4x xz/5.4.6/uxouxrg
-    zlib-ng/2.1.5/uctcqfl libxml2/2.10.3/vdqe2g3
-Running epoch 0:   0%|          | 0/22600 [00:00<?, ?it/s]                                                          Traceback (most recent call last):
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/train.py", line 175, in <module>
-    main()
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/train.py", line 116, in main
-    sample.update(models.get_original_disp(sample))  # get non-attacked disparity
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/models/adversarial_models.py", line 17, in wrapper
-    ret = func(*f_args, **f_kwargs)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/models/adversarial_models.py", line 46, in get_original_disp
-    distill_disp = self.fix_distill(sample['left'].permute(0,3,1,2))
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/.local/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/.local/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/models/adversarial_models.py", line 67, in forward
-    disp_ests = self.model(input_img)
-                ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/.local/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/.local/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ctnguyen/neural_nemesis/DLG2_p3/src/models/guo/monocular_model.py", line 114, in forward
-    x = (x - mean.view(1, -1, 1, 1)) / (var.view(1, -1, 1, 1))
-         ~~^~~~~~~~~~~~~~~~~~~~~~~~
-RuntimeError: The size of tensor a (512) must match the size of tensor b (3) at non-singleton dimension 1
