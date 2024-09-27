@@ -1,9 +1,0 @@
-===============================
-=> Everything will be saved to "Dst/checkpoints/result"
-=> Load 22600 images from the pathes listed in dataset/Src/list/eigen_train_list.txt
-===============================
-True
-=> Load Guo's model
-=> Load Guo's model weight
-===============================
-Start training ...
