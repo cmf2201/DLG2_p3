@@ -8,6 +8,7 @@ from models.adversarial_models import AdversarialModels
 from models.loss_model import AdversarialLoss
 from torchvision.transforms import v2
 from torchvision.transforms import ToPILImage
+from torchvision.transforms.functional import pil_to_tensor
 from utils.dataloader import LoadFromImageFile
 from utils.utils import *
 from tqdm import tqdm
@@ -24,7 +25,7 @@ parser.add_argument('--print_file', type=str, default='Src/list/printable30value
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=1)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=4)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=40)
@@ -51,7 +52,7 @@ def main():
     torch.cuda.empty_cache()
 
 
-    # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the patch
+    # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the background
     train_transform = None
     
     train_set = LoadFromImageFile(
@@ -85,8 +86,10 @@ def main():
 
     # Patch and Mask
     # Initialize a random patch image
-    patch_cpu = torchvision.io.read_image("/home/cmfrench/RBE474X/DLG2_p3/src/baseline_patch.png")
-    mask_cpu = torchvision.io.read_image("/home/cmfrench/RBE474X/DLG2_p3/src/mask.png")
+    patch_cpu = torchvision.io.read_image("/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
+    patch_cpu = v2.Resize(size=(56,56))(patch_cpu)
+    mask_cpu = torchvision.io.read_image("/home/ctnguyen/neural_nemesis/DLG2_p3/src/mask.png")
+    mask_cpu = v2.Resize(size=(56,56))(mask_cpu)
 
     
     # Optimizer
@@ -116,54 +119,72 @@ def main():
         ep_time = time.time()
 
         for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch {epoch}', total=len(train_loader), leave=False):
-            with torch.autograd.detect_anomaly():
-                #sample.permute(0, 3, 1, 2)
-                sample = to_cuda_vars(sample)  # send item to gpu
-                
-                sample.update(models.get_original_disp(sample))  # get non-attacked disparity
+            if sample:
+                with torch.autograd.detect_anomaly():
+                    #sample.permute(0, 3, 1, 2)
+                    sample = to_cuda_vars(sample)  # send item to gpu
+                    
+                    sample.update(models.get_original_disp(sample))  # get non-attacked disparity
 
-                img, original_disp = sample['left'], sample['original_distill_disp']
-                patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
+                    img, original_disp = sample['left'], sample['original_distill_disp']
+                    patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
-                orig = original_disp[0]
-                orig = to_image(orig)
+                    # orig = original_disp[0]
+                    # orig = to_image(orig)
 
-                image_array = np.array(orig)
-                plt.imshow(image_array, cmap='hot', interpolation='nearest')
-                plt.colorbar() # Add a colorbar to interpret values
-                plt.savefig('heatmap.png')
+                    # image_array = np.array(orig)
+                    # plt.imshow(image_array, cmap='hot', interpolation='nearest')
+                    # plt.colorbar() # Add a colorbar to interpret values
+                    # plt.savefig('heatmap.png')
 
-                # orig.save('original_disp.png')
-                # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
-                patch_t, mask_t = patch, mask
+                    # orig.save('original_disp.png')
+                    # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
+                    batch_of_img_with_patch = []
+                    for batch_index in range(img.size(dim=0)):
+                        patch_t, mask_t, endpoints = perspective_transformer(patch, mask)
+                        
+                        img1 = to_image(img[batch_index])
+                        img2 = to_image(patch_t)
+                        random_coordinate = (random.randint(0, img1.width - img2.width), random.randint(0, img1.height - img2.height))
+                        
+                        # apply transformed patch to clean image
+                        img1.paste(img2,random_coordinate)
+                        img1.save("mageinimage" + str(batch_index) + ".png")
 
-                # apply transformed patch to clean image
-                
-                #img.paste(patch,(int(img.width/2),int(img.height/2)))
-                
-                # Loss
-                # calculate the distance loss
-                disp_loss = torch.zeros(mask_cpu.size(), requires_grad=True)
-                # loss class calulates nps_loss and tv_loss
-                loss = loss_md.forward(torch.zeros(mask_cpu.size(), requires_grad=True),disp_loss)
-                nps_loss = loss_md.nps_loss
-                tv_loss = loss_md.tv_loss
+                        img_with_patch = pil_to_tensor(img1)
+                        batch_of_img_with_patch.append(img_with_patch)
 
-                # Used to display the loss of the given epoch.
-                ep_nps_loss += nps_loss.detach().cpu().numpy()
-                ep_tv_loss += tv_loss.detach().cpu().numpy()
-                ep_disp_loss += disp_loss.detach().cpu().numpy()
-                ep_loss += loss.detach().cpu().numpy()
+                    tensor_of_img_with_patch = torch.stack(batch_of_img_with_patch) / 255
+                    sample.update({'patch':tensor_of_img_with_patch.cuda()})
+                    sample.update(models.get_disp_mask(sample))
 
-                loss.backward()
-                optimizer.step()
-                optimizer.zero_grad()
-                models.distill.zero_grad()
+                    disp_with_mask = sample['distill_mask']
+                    print(disp_with_mask.size())
+                    disp_of_area = 0# some part of disp_with_mask
+                        
+                    # Loss
+                    # loss class calulates nps_loss and tv_loss
+                    loss = loss_md.forward(disp_with_mask)
+                    nps_loss = loss_md.nps_loss
+                    tv_loss = loss_md.tv_loss
+                    disp_loss = loss_md.disp_loss
 
-                patch_cpu.data.clamp_(0, 1)  # keep patch in image range
+                    # Used to display the loss of the given epoch.
+                    ep_nps_loss += nps_loss.detach().cpu().numpy()
+                    ep_tv_loss += tv_loss.detach().cpu().numpy()
+                    ep_disp_loss += disp_loss.detach().cpu().numpy()
+                    ep_loss += loss.detach().cpu().numpy()
 
-                del patch_t, loss, nps_loss, tv_loss, disp_loss
-                torch.cuda.empty_cache()
+                    loss.backward()
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    models.distill.zero_grad()
+
+                    patch_cpu.data.clamp_(0, 1)  # keep patch in image range
+
+                    del patch_t, loss, nps_loss, tv_loss, disp_loss
+                    torch.cuda.empty_cache()
+                    print('one loop done')
 
         ep_disp_loss = ep_disp_loss/len(train_loader)
         ep_nps_loss = ep_nps_loss/len(train_loader)

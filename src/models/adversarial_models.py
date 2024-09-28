@@ -49,6 +49,14 @@ class AdversarialModels():
         return add_sample
 
 
+    @make_nograd_func
+    def get_disp_mask(self, sample):
+        add_sample = {}
+        distill_disp = self.fix_distill(sample['patch']) / 255
+        add_sample.update({'distill_mask': distill_disp.detach()})
+        return add_sample
+
+
 # Load the copied Guo's network (Learning-Monocular-Depth-by-Stereo-master)
 class DistillModel(torch.nn.Module):
 

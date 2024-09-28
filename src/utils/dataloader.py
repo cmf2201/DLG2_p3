@@ -14,6 +14,8 @@ to_image = ToPILImage()
 class BaseDataset(Dataset):
     def __init__(self, image_list_file):
         self.image_file_list = self.load_file_list(image_list_file)
+        self.prev_img = read_image('/home/ctnguyen/neural_nemesis/DLG2_p3/src/dataset/2011_09_29/2011_09_29_drive_0071_sync/image_03/data/0000000006.png')
+        self.prev_img = v2.Resize(size=(256,512))(self.prev_img)
 
     def load_file_list(self, filenames_file):
         image_file_list = []
@@ -22,18 +24,15 @@ class BaseDataset(Dataset):
             for line in lines:
                 image_file_list.append(line.strip().split())
         return image_file_list
-
+    
     def load_image(self, path):
-        # img = cv2.imread(path)
-        # cv2.imwrite("cv2image.png", img)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = read_image(path)
-        if img is None:
+        img = self.prev_img
+        try:
+            img = read_image(path)
+            img = v2.Resize(size=(256,512))(img)
+            self.prev_img = img
+        except:
             print("not finding {}.".format(path))
-            raise Exception("If the extension is different, set an argumentthe \"extension\" when you call dataloaders \"e.g. LoadFromImageFile\"")
-        # img = self.resize_img(img, 512, 256)
-        # img = torch.from_numpy(img)
-        img = v2.Resize(size=(256,512))(img)
         return img
 
     def resize_img(self, img, width, height):
