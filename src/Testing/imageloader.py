@@ -27,3 +27,12 @@ image_array = np.array(image)
 plt.imshow(image_array, cmap='hot', interpolation='nearest')
 plt.colorbar() # Add a colorbar to interpret values
 plt.savefig('heatmap.png')
+
+
+
+# a = [a11 a12]
+#     [a21 a22]
+# b = [b11 b12]
+#     [b21 b22]
+# a*b = [a11*b11 a12*b12]
+#       [a21*b21 a22*b22]

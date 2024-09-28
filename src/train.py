@@ -9,6 +9,7 @@ from models.loss_model import AdversarialLoss
 from torchvision.transforms import v2
 from torchvision.transforms import ToPILImage
 from torchvision.transforms.functional import pil_to_tensor
+from torchvision.transforms.functional import crop
 from utils.dataloader import LoadFromImageFile
 from utils.utils import *
 from tqdm import tqdm
@@ -135,36 +136,64 @@ def main():
                     # image_array = np.array(orig)
                     # plt.imshow(image_array, cmap='hot', interpolation='nearest')
                     # plt.colorbar() # Add a colorbar to interpret values
-                    # plt.savefig('heatmap.png')
+                    # plt.savefig('Testing/generated/heatmap.png')
 
-                    # orig.save('original_disp.png')
+                    # orig.save('Testing/generated/original_disp.png')
                     # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
                     batch_of_img_with_patch = []
+                    list_of_masks = []
+                    list_of_relative_coords = []
                     for batch_index in range(img.size(dim=0)):
                         patch_t, mask_t, endpoints = perspective_transformer(patch, mask)
                         
                         img1 = to_image(img[batch_index])
                         img2 = to_image(patch_t)
+                        # coordinate of top left of patch_t
                         random_coordinate = (random.randint(0, img1.width - img2.width), random.randint(0, img1.height - img2.height))
+                        list_of_relative_coords.append(random_coordinate)
                         
                         # apply transformed patch to clean image
                         img1.paste(img2,random_coordinate)
-                        img1.save("mageinimage" + str(batch_index) + ".png")
+                        # img1.save("Testing/generated/imageinimage" + str(batch_index) + ".png")
 
                         img_with_patch = pil_to_tensor(img1)
                         batch_of_img_with_patch.append(img_with_patch)
+                        list_of_masks.append(mask_t)
 
                     tensor_of_img_with_patch = torch.stack(batch_of_img_with_patch) / 255
                     sample.update({'patch':tensor_of_img_with_patch.cuda()})
                     sample.update(models.get_disp_mask(sample))
 
                     disp_with_mask = sample['distill_mask']
-                    print(disp_with_mask.size())
-                    disp_of_area = 0# some part of disp_with_mask
+
+                    list_of_disp_of_patch = []
+                    for i in range(disp_with_mask.size(0)):
+                        patch_depth = disp_with_mask[i][0]
+                        mask_transform = list_of_masks[i][0]
+                        random_coord = list_of_relative_coords[i]
+
+                        # visual_patch_disp = to_image(patch_depth)
+                        # visual_patch_disp.save('Testing/generated/before_crop' + str(i) + '.png')
+
+                        # print(random_coord)
+                        disp_of_patch = crop(img=patch_depth, top=random_coord[1], left=random_coord[0], 
+                                             height=mask_transform.size(1), width=mask_transform.size(0))
+
+                        # visual_patch_disp = to_image(disp_of_patch)
+                        # visual_patch_disp.save('Testing/generated/before_mask' + str(i) + '.png')
+
+                        disp_of_patch = disp_of_patch * (mask_transform / 255)
+                        disp_of_patch = torch.unsqueeze(disp_of_patch, 0)
+                        list_of_disp_of_patch.append(disp_of_patch)
+
+                        # visual_patch_disp = to_image(disp_of_patch)
+                        # visual_patch_disp.save('Testing/generated/after_mask' + str(i) + '.png')
+                    
+                    tensor_of_patch_depth = torch.stack(list_of_disp_of_patch)
                         
                     # Loss
                     # loss class calulates nps_loss and tv_loss
-                    loss = loss_md.forward(disp_with_mask)
+                    loss = loss_md.forward(tensor_of_patch_depth)
                     nps_loss = loss_md.nps_loss
                     tv_loss = loss_md.tv_loss
                     disp_loss = loss_md.disp_loss
