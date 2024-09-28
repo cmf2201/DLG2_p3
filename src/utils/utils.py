@@ -61,3 +61,7 @@ def perspective_transformer(patch, mask):
     perspective_mask = perspective(img=mask, startpoints=startpoints,endpoints=endpoints)
 
     return (perspective_patch, perspective_mask, endpoints)
+
+def untransform(mask, endpoints):
+    untransformed_mask = perspective(img=mask, startpoints=endpoints, endpoints=((0,0),(0,56),(56,56),(56,0)))
+    return untransformed_mask

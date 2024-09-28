@@ -98,22 +98,11 @@ def main():
     optimizer = torch.optim.Adam([patch_cpu], lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
 
-    printable_colors = []
-    printable_color_lines = open('Src/list/printable30values.txt').readlines()
-    for line in printable_color_lines:
-        string_color_array = line.strip()
-        string_color_array = string_color_array.split(',')
-
-        color_array = []
-        for color_float in string_color_array:
-            color_array.append(float(color_float))
-
-        printable_colors.append(color_array)
-    printable_colors = torch.Tensor(printable_colors)
-
     # Train
     print('===============================')
     print("Start training ...")
+    torch.set_printoptions(profile="full")
+
     start_time = time.time()
     for epoch in range(args.num_epochs):
         ep_nps_loss, ep_tv_loss, ep_loss, ep_disp_loss = 0, 0, 0, 0
@@ -143,8 +132,10 @@ def main():
                     batch_of_img_with_patch = []
                     list_of_masks = []
                     list_of_relative_coords = []
+                    list_of_endpoints = []
                     for batch_index in range(img.size(dim=0)):
                         patch_t, mask_t, endpoints = perspective_transformer(patch, mask)
+                        list_of_endpoints.append(endpoints)
                         
                         img1 = to_image(img[batch_index])
                         img2 = to_image(patch_t)
@@ -158,7 +149,7 @@ def main():
 
                         img_with_patch = pil_to_tensor(img1)
                         batch_of_img_with_patch.append(img_with_patch)
-                        list_of_masks.append(mask_t)
+                        list_of_masks.append(torch.unsqueeze(mask[0], dim=0))
 
                     tensor_of_img_with_patch = torch.stack(batch_of_img_with_patch) / 255
                     sample.update({'patch':tensor_of_img_with_patch.cuda()})
@@ -171,6 +162,7 @@ def main():
                         patch_depth = disp_with_mask[i][0]
                         mask_transform = list_of_masks[i][0]
                         random_coord = list_of_relative_coords[i]
+                        endpoint = list_of_endpoints[i]
 
                         # visual_patch_disp = to_image(patch_depth)
                         # visual_patch_disp.save('Testing/generated/before_crop' + str(i) + '.png')
@@ -178,6 +170,10 @@ def main():
                         # print(random_coord)
                         disp_of_patch = crop(img=patch_depth, top=random_coord[1], left=random_coord[0], 
                                              height=mask_transform.size(1), width=mask_transform.size(0))
+                        
+                        disp_of_patch = torch.unsqueeze(disp_of_patch, 0)
+                        disp_of_patch = untransform(disp_of_patch, endpoint)
+                        disp_of_patch = torch.squeeze(disp_of_patch)
 
                         # visual_patch_disp = to_image(disp_of_patch)
                         # visual_patch_disp.save('Testing/generated/before_mask' + str(i) + '.png')
@@ -186,14 +182,17 @@ def main():
                         disp_of_patch = torch.unsqueeze(disp_of_patch, 0)
                         list_of_disp_of_patch.append(disp_of_patch)
 
-                        # visual_patch_disp = to_image(disp_of_patch)
-                        # visual_patch_disp.save('Testing/generated/after_mask' + str(i) + '.png')
+                        visual_patch_disp = to_image(disp_of_patch)
+                        visual_patch_disp.save('Testing/generated/after_mask' + str(i) + '.png')
                     
-                    tensor_of_patch_depth = torch.stack(list_of_disp_of_patch)
-                        
+                    tensor_of_patch_depth = torch.stack(list_of_disp_of_patch).requires_grad_().cuda()
+                    target_depth = 10/255
+                    target_depths = torch.stack(list_of_masks).cuda() / 255 * target_depth
+                    target_depths.requires_grad_()
+
                     # Loss
                     # loss class calulates nps_loss and tv_loss
-                    loss = loss_md.forward(tensor_of_patch_depth)
+                    loss = loss_md.forward(tensor_of_patch_depth, target_depths)
                     nps_loss = loss_md.nps_loss
                     tv_loss = loss_md.tv_loss
                     disp_loss = loss_md.disp_loss
