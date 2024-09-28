@@ -26,12 +26,12 @@ parser.add_argument('--print_file', type=str, default='Src/list/printable30value
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=4)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=16)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
-parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=40)
+parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=20)
 parser.add_argument('--seed', type=int, help='seed for random functions, and network initialization', default=0)
-parser.add_argument('--patch_size', type=int, help='Resolution of patch', default=256)
+parser.add_argument('--patch_size', type=int, help='Resolution of patch', default=56)
 parser.add_argument('--patch_shape', type=str, help='circle or square', default='circle')
 parser.add_argument('--patch_path', type=str, help='Initialize patch from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
 parser.add_argument('--mask_path', type=str, help='Initialize mask from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
@@ -212,7 +212,6 @@ def main():
 
                     del patch_t, loss, nps_loss, tv_loss, disp_loss
                     torch.cuda.empty_cache()
-                    print('one loop done')
 
         ep_disp_loss = ep_disp_loss/len(train_loader)
         ep_nps_loss = ep_nps_loss/len(train_loader)

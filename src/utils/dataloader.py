@@ -32,7 +32,7 @@ class BaseDataset(Dataset):
             img = v2.Resize(size=(256,512))(img)
             self.prev_img = img
         except:
-            print("not finding {}.".format(path))
+            pass
         return img
 
     def resize_img(self, img, width, height):

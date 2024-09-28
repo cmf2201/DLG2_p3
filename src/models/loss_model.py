@@ -14,14 +14,14 @@ class AdversarialLoss(nn.Module):
         self.depth = None
         self.patch = None
         
-    def forward(self, patch, depth, target):
+    def forward(self, depth, target): #include patch
         self.target = target
         self.depth = depth
-        self.patch = patch
+        self.patch = depth
         self.disp_loss = self.calc_disp_loss()
         self.nps_loss = self.calc_nps_loss()
         self.tv_loss = self.calc_tv_loss()
-        loss = self.nps_loss + self.tv_loss + self.disp_loss
+        loss = self.disp_loss
         return loss.mean()
     
 
@@ -43,11 +43,19 @@ class AdversarialLoss(nn.Module):
     ### Both should return tensors of the same size of the img with loss 
     # Non-printability score loss TODO: Implement
     def calc_nps_loss(self):
+        # assuming self.patch is patch.png 3x56x56
+        new_patch = self.patch.permute(1,2,0)
+        
+        self.print_colors 
+        # [[r,g,b],
+        # [r,g,b],
+        # ... 
+        # [r,g,b]]
         return self.patch
     
     # Total Variation Loss TODO: Implement
     def calc_tv_loss(self):
         return self.patch
     
-    def calc_disp_loss(self, ):
+    def calc_disp_loss(self):
         return nn.L1Loss(reduction='sum')(self.depth, (self.target))
