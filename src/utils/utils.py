@@ -45,7 +45,7 @@ def nps_loss(img, colors):
 
 
 def perspective_transformer(patch, mask):
-    size = patch.size() # 56, 56
+    size = patch.size()[1:3] # 56, 56
 
     startpoints = ((0,0),
                    (0,size[1]),
@@ -62,6 +62,13 @@ def perspective_transformer(patch, mask):
 
     return (perspective_patch, perspective_mask, endpoints)
 
-def untransform(mask, endpoints):
-    untransformed_mask = perspective(img=mask, startpoints=endpoints, endpoints=((0,0),(0,56),(56,56),(56,0)))
+def untransform(img, endpoints):
+    size = img.size()[1:3] # 56, 56
+
+    startpoints = ((0,0),
+                   (0,size[1]),
+                   (size[0],size[1]),
+                   (size[0],0))
+    
+    untransformed_mask = perspective(img=img, startpoints=endpoints, endpoints=startpoints)
     return untransformed_mask

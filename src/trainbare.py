@@ -120,7 +120,7 @@ def main():
 
 
                 
-                img, original_disp = sample['left'], sample['original_distill_disp']
+                img = sample['left']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
                 # orig = original_disp[0]
@@ -133,33 +133,56 @@ def main():
 
                 # orig.save('Testing/generated/original_disp.png')
                 # transform patch and maybe the mask corresponding to the transformed patch(binary iamge)
+
+
                 batch_of_img_with_patch = []
                 list_of_masks = []
                 list_of_relative_coords = []
                 list_of_endpoints = []
+
+                directory = f"Testing/generated/attacked/{str(i_batch)}"
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+
                 for batch_index in range(img.size(dim=0)):
+                    # retreive transformed patch information
                     patch_t, mask_t, endpoints = perspective_transformer(patch, mask)
                     list_of_endpoints.append(endpoints)
                     
-                    img1 = to_image(img[batch_index])
-                    img2 = to_image(patch_t)
+                    # convert both images to PIL images
+                    background = to_image(img[batch_index])
+                    patch_t = to_image(patch_t)
+                    mask_t = to_image(mask_t)
+
                     # coordinate of top left of patch_t
-                    random_coordinate = (random.randint(0, img1.width - img2.width), random.randint(0, img1.height - img2.height))
+                    random_coordinate = (random.randint(0, background.width - patch_t.width), random.randint(0, background.height - patch_t.height))
                     list_of_relative_coords.append(random_coordinate)
                     
                     # apply transformed patch to clean image
-                    img1.paste(img2,random_coordinate)
-                    # img1.save("Testing/generated/imageinimage" + str(batch_index) + ".png")
+                    background.convert("RGBA")
+                    background.paste(patch_t,random_coordinate,mask_t.convert("L"))
+                    # background.save(os.path.join(directory,f"{batch_index}.png"))
 
-                    img_with_patch = pil_to_tensor(img1)
+                    img_with_patch = pil_to_tensor(background)
                     batch_of_img_with_patch.append(img_with_patch)
+
+                    ## list of untransformed masks
                     list_of_masks.append(torch.unsqueeze(mask[0], dim=0))
 
-                tensor_of_img_with_patch = torch.stack(batch_of_img_with_patch) / 255
+                tensor_of_img_with_patch = torch.stack(batch_of_img_with_patch)/255
+
                 sample.update({'patch':tensor_of_img_with_patch.cuda()})
                 sample.update(models.get_disp_mask(sample))
-
+                
+                # Now have 0-1 disparity.
                 disp_with_mask = sample['distill_mask']
+                # for i in range(disp_with_mask.size(0)):
+
+                #     new_disp = to_image(sample['distill_mask'][i])
+                #     orig_disp = to_image(sample['original_distill_disp'][i])
+
+                #     new_disp.save(os.path.join(directory,f"atkdisp{i}.png"))
+                #     orig_disp.save(os.path.join(directory,f"oridisp{i}.png"))
 
                 list_of_disp_of_patch = []
                 for i in range(disp_with_mask.size(0)):
@@ -186,8 +209,8 @@ def main():
                     disp_of_patch = torch.unsqueeze(disp_of_patch, 0)
                     list_of_disp_of_patch.append(disp_of_patch)
 
-                    visual_patch_disp = to_image(disp_of_patch)
-                    visual_patch_disp.save('Testing/generated/after_mask' + str(i) + '.png')
+                    # visual_patch_disp = to_image(disp_of_patch)
+                    # visual_patch_disp.save(os.path.join(directory,f"after_mask{i}.png"))
                 
                 tensor_of_patch_depth = torch.stack(list_of_disp_of_patch).requires_grad_().cuda()
                 target_depth = 10/255

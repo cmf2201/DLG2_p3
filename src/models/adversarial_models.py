@@ -51,6 +51,7 @@ class AdversarialModels():
 
     @make_nograd_func
     def get_disp_mask(self, sample):
+        ## Get the disparity mask of the given sample.
         add_sample = {}
         distill_disp = self.fix_distill(sample['patch']) / 255
         add_sample.update({'distill_mask': distill_disp.detach()})

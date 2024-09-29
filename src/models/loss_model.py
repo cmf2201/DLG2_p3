@@ -19,15 +19,15 @@ class AdversarialLoss(nn.Module):
         self.depth = depth
         self.patch = depth
         self.disp_loss = self.calc_disp_loss()
-        self.nps_loss = self.calc_nps_loss()
-        self.tv_loss = self.calc_tv_loss()
-        loss = self.disp_loss
+        # self.nps_loss = self.calc_nps_loss()
+        # self.tv_loss = self.calc_tv_loss()
+        loss = self.disp_loss ## TODO:FIX WITH OTHERS LOSSES
         return loss.mean()
     
 
     def printibility_colors(self):
         printable_colors = []
-        printable_color_lines = open(os.path.expanduser('~') + '/neural_nemesis/DLG2_p3/src/Src/list/printable30values.txt').readlines()
+        printable_color_lines = open(self.args.colors_path).readlines()
         for line in printable_color_lines:
             string_color_array = line.strip()
             string_color_array = string_color_array.split(',')
@@ -44,7 +44,7 @@ class AdversarialLoss(nn.Module):
     # Non-printability score loss TODO: Implement
     def calc_nps_loss(self):
         # assuming self.patch is patch.png 3x56x56
-        new_patch = self.patch.permute(1,2,0)
+        # new_patch = self.patch.permute(1,2,0)
         
         self.print_colors 
         # [[r,g,b],

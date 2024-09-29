@@ -178,3 +178,5 @@ src/*.out
 src/Dataset/*
 Testing/generated/*.png
 *.npy
+generated/
+Transform/
