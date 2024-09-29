@@ -176,3 +176,5 @@ src/envCreate.sh
 src/*.err
 src/*.out
 src/Dataset/*
+Testing/generated/*.png
+*.npy

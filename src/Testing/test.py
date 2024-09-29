@@ -1,14 +1,13 @@
 import torch
+import numpy as np
+from torchvision.transforms import ToPILImage
 
-a = torch.Tensor([[3, 2, 9],
-                  [12, 13, 5],
-                  [12, 9, 8]])
-b = torch.Tensor([[0, 1, 1],
-                  [1, 1, 0],
-                  [0, 0, 1]])
+to_image = ToPILImage()
 
-print(a*b)
+for i in range(20):
+    patch = np.load('/home/ctnguyen/neural_nemesis/DLG2_p3/src/Dst/checkpoints/result/epoch_' + str(i) + '_mask.npy')
 
-tup = [(912,11),(310,31221)]
+    patch = torch.Tensor(patch)
 
-print(tup[0][0])
+    image = to_image(patch/255)
+    image.save('/home/ctnguyen/neural_nemesis/DLG2_p3/src/Testing/generated/patch_' + str(i) + '.png')
