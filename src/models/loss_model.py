@@ -44,14 +44,15 @@ class AdversarialLoss(nn.Module):
     # Non-printability score loss TODO: Implement
     def calc_nps_loss(self):
         # assuming self.patch is patch.png 3x56x56
-        # new_patch = self.patch.permute(1,2,0)
-        
-        self.print_colors 
-        # [[r,g,b],
-        # [r,g,b],
-        # ... 
-        # [r,g,b]]
-        return self.patch
+        new_patch = self.patch.permute(1,2,0) # now (H, W, C)
+        squeezed_patch = new_patch.reshape(-1,3) # shape = (H*W, 3)
+        distances = torch.cdist(squeezed_patch.float(), self.print_colors) # calculates Euclidean distance between each color value for each pixel
+        min_distances = torch.min(distances, dim = 1).values() # finds min distance value for each pixel
+        min_distances_final = min_distances.view(new_patch.shape[0], new_patch.shape[1], 1).repeat(1, 1, 3) # reshapes back to (H, W, C)
+        loss = min_distances_final.permute(0, 1, 2) # back to (C, H, W)
+        target_tensor = torch.zeros_like(self.patch) # assuming target minimum distance is 0
+        return nn.L1loss(reduction='sum')(loss, target_tensor)
+         
     
     # Total Variation Loss TODO: Implement
     def calc_tv_loss(self):
