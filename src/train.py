@@ -21,7 +21,7 @@ warnings.simplefilter('ignore')
 
 parser = argparse.ArgumentParser(description='Generating Adversarial Patches')
 parser.add_argument('--data_root', type=str, help='path to dataset', default='dataset')
-parser.add_argument('--train_list', type=str, default='Src/list/eigen_train_list.txt')
+parser.add_argument('--train_list', type=str, default='Src/list/filter_eigen_train_list.txt')
 parser.add_argument('--print_file', type=str, default='Src/list/printable30values.txt')
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
@@ -33,9 +33,9 @@ parser.add_argument('--num_epochs', type=int, help='number of total epochs', def
 parser.add_argument('--seed', type=int, help='seed for random functions, and network initialization', default=0)
 parser.add_argument('--patch_size', type=int, help='Resolution of patch', default=56)
 parser.add_argument('--patch_shape', type=str, help='circle or square', default='circle')
-parser.add_argument('--patch_path', type=str, help='Initialize patch from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
-parser.add_argument('--mask_path', type=str, help='Initialize mask from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
-parser.add_argument('--colors_path', type=str, help='Directory of printable colors', default="/home/cmfrench/RBE474X/DLG2_p3/src/Src/list/printable30values.txt")
+parser.add_argument('--patch_path', type=str, help='Initialize patch from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch-no_background.png")
+parser.add_argument('--mask_path', type=str, help='Initialize mask from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch-no_background.png")
+parser.add_argument('--colors_path', type=str, help='Directory of printable colors', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/Src/list/printable30values.txt")
 parser.add_argument('--target_disp', type=int, default=120)
 parser.add_argument('--model', nargs='*', type=str, default='distill', choices=['distill'], help='Model architecture')
 parser.add_argument('--name', type=str, help='output directory', default="result")
@@ -123,6 +123,15 @@ def main():
                 img, original_disp = sample['left'], sample['original_distill_disp']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
+                patches = torch.stack([patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch, patch])
+
+                pasted_imgs, big_masks = image_paste(args.batch_size, img, patches)
+
+                for i in range(args.batch_size):
+                    pasted_img = pasted_imgs[i]
+                    PILpasted = to_image(pasted_img)
+                    PILpasted.save('/home/ctnguyen/neural_nemesis/DLG2_p3/src/Testing/pasted_patch_' + str(i) + '.png')
+
                 # orig = original_disp[0]
                 # orig = to_image(orig)
 
@@ -148,9 +157,10 @@ def main():
                     list_of_relative_coords.append(random_coordinate)
                     
                     # apply transformed patch to clean image
+                    
                     img1.paste(img2,random_coordinate)
                     # img1.save("Testing/generated/imageinimage" + str(batch_index) + ".png")
-
+                    pasted_img = (1 - mask_t) * img1 + mask_t * patch_t
                     img_with_patch = pil_to_tensor(img1)
                     batch_of_img_with_patch.append(img_with_patch)
                     list_of_masks.append(torch.unsqueeze(mask[0], dim=0))
