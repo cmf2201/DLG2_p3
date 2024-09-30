@@ -80,8 +80,7 @@ def image_paste(batch_count, background_img_stack, patch_stack, tiny_mask_stack)
         background_img = background_img_stack[batch_i].cuda()
         patch = patch_stack[batch_i][:3].cuda()
         tiny_mask = tiny_mask_stack[batch_i][:3].cuda()
-        tiny_mask = tiny_mask / 255
-        tiny_mask.to(torch.int)
+        tiny_mask = tiny_mask
         patch = patch * tiny_mask
         
         # MAKE RANDOMIZER
@@ -96,7 +95,7 @@ def image_paste(batch_count, background_img_stack, patch_stack, tiny_mask_stack)
 
         mask = torch.zeros(background_img.size()).cuda()
         mask = mask + new_patch
-        mask.clamp_(0, 1)
+        mask = torch.ceil(mask)
         mask_stack.append(mask[0].unsqueeze(0))
 
         output = (1 - mask) * background_img + (mask * new_patch)
