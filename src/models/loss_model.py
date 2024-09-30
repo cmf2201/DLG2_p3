@@ -22,7 +22,7 @@ class AdversarialLoss(nn.Module):
         # self.nps_loss = self.calc_nps_loss()
         # self.tv_loss = self.calc_tv_loss()
         loss = self.disp_loss ## TODO:FIX WITH OTHERS LOSSES
-        return loss.mean()
+        return loss
     
 
     def printibility_colors(self):

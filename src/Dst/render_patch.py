@@ -1,6 +1,10 @@
 import numpy as np
 from PIL import Image as im
 import os
+from torchvision.transforms import ToPILImage
+import torch
+
+to_image = ToPILImage()
 
 directory_to_load = "/home/cmfrench/RBE474X/DLG2_p3/src/Dst/checkpoints/result"
 
@@ -18,9 +22,10 @@ def get_files_with_extension(folder_path, extension):
 filepaths = get_files_with_extension(directory_to_load,"patch.npy")
 for file in filepaths:
     array = np.load(file)
-    data = im.fromarray(array,mode="RGB")
+    tarray = torch.from_numpy(array)
+    image = to_image(tarray)
     orig_name = (os.path.basename(file).split('/')[-1])
     orig_name = orig_name[0:-4]
     new_path = os.path.join("PatchCheckpoints",orig_name)
 
-    data.save(f"{new_path}.png")
+    image.save(f"{new_path}.png")

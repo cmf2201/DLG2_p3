@@ -76,28 +76,40 @@ def main():
         drop_last=True
     )
 
-    print('===============================')
-    # Attacked Models
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cuda:2')
-    print(torch.cuda.is_available())
-    models = AdversarialModels(args)
-    models.load_ckpt()
+    # Transforms
+    transforms = v2.Compose([
+        v2.RandomPerspective(),
+        v2.RandomResize(30,70),
+        v2.RandomRotation((-15,15))
+        # v2.RandomPhotometricDistort()
+    ])
 
-    # Loss
-    loss_md = AdversarialLoss(args)
+    print('===============================')
 
     # Patch and Mask
     # Initialize a random patch image, resize to fix within training images
-    patch_cpu = torchvision.io.read_image(args.patch_path)
-    patch_cpu = v2.Resize(size=(56,56))(patch_cpu)
-    mask_cpu = torchvision.io.read_image(args.mask_path)
-    mask_cpu = v2.Resize(size=(56,56))(mask_cpu)
-
+    patch_cpu = torchvision.io.read_image(args.patch_path).type(torch.float32)
+    patch_cpu = v2.Resize(size=(56,56))(patch_cpu).requires_grad_()
+    mask_cpu = torchvision.io.read_image(args.mask_path).type(torch.float32)
+    mask_cpu = v2.Resize(size=(56,56))(mask_cpu).requires_grad_()
+    
+    for i in range(20):
+        print(f"patch:{patch_cpu}")
+        img = transforms(patch_cpu)
+        img = to_image(img)
+        img.save("test.png")
     
     # Optimizer
     # pass the patch to the optimizer
     optimizer = torch.optim.Adam([patch_cpu], lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
+
+
+    # Attacked Models
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cuda:2')
+    print(torch.cuda.is_available())
+    models = AdversarialModels(args)
+    models.load_ckpt()
 
     # Train
     print('===============================')
@@ -205,22 +217,32 @@ def main():
 
                     # visual_patch_disp = to_image(disp_of_patch)
                     # visual_patch_disp.save(os.path.join(directory,f"after_mask{i}.png"))
-                
-                tensor_of_patch_depth = torch.stack(list_of_disp_of_patch).requires_grad_().cuda()
+                disp_tensor = torch.stack(list_of_disp_of_patch).cuda().requires_grad_()
+                Expected = disp_tensor
                 target_depth = 10/255
-                target_depths = torch.stack(list_of_masks).cuda() / 255 * target_depth
-                target_depths.requires_grad_()
+                target_depths = torch.stack(list_of_masks).cuda().type(torch.float32).requires_grad_()
+                target_depths = target_depths / 255 * target_depth
+                print(f"gradient:{patch_cpu.grad}")
+                Actual = target_depths
+
+                l1_loss = torch.nn.L1Loss()
+                loss = l1_loss(Expected,Actual)
+
+
+
+                # tensor_of_patch_depth = torch.stack(list_of_disp_of_patch).requires_grad_().cuda()
+                # target_depth = 10/255
+                # target_depths = torch.stack(list_of_masks).cuda() / 255 * target_depth
+                # target_depths.requires_grad_()
 
                 # Loss
+
                 # loss class calulates nps_loss and tv_loss
-                loss = loss_md.forward(tensor_of_patch_depth, target_depths)
-                disp_loss = loss_md.disp_loss
-                print(f"Displosssize:{disp_loss}")
-                pil_disp = to_image(disp_loss[0])
-                pil_disp.save(os.path.join(directory,"loss.png"))
+                # loss = loss_md.forward(tensor_of_patch_depth, target_depths)
+                # disp_loss = loss_md.disp_loss
 
                 # Used to display the loss of the given epoch.
-                ep_disp_loss += disp_loss.detach().cpu().numpy()
+                ep_disp_loss += Expected.detach().cpu().numpy()
                 ep_loss += loss.detach().cpu().numpy()
 
                 loss.backward()
@@ -230,7 +252,7 @@ def main():
 
                 patch_cpu.data.clamp_(0, 255)  # keep patch in image range
 
-                del patch_t, loss, disp_loss, # nps_loss, tv_loss
+                del patch_t, loss, Actual, Expected, target_depths, disp_tensor, sample# nps_loss, tv_loss
                 torch.cuda.empty_cache()
 
         ep_disp_loss = ep_disp_loss/len(train_loader)
