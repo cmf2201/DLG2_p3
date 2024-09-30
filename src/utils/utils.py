@@ -60,7 +60,7 @@ def perspective_transformer(patch, mask):
     perspective_patch = perspective(img=patch, startpoints=startpoints,endpoints=endpoints)
     perspective_mask = perspective(img=mask, startpoints=startpoints,endpoints=endpoints)
 
-    return perspective_patch, perspective_mask, endpoints
+    return perspective_patch, perspective_mask
 
 def untransform(img, endpoints):
     size = img.size()[1:3] # 56, 56
@@ -79,8 +79,6 @@ def image_paste(batch_count, background_img_stack, patch_stack):
     for batch_i in range(batch_count):
         background_img = background_img_stack[batch_i].cuda()
         patch = patch_stack[batch_i][:3].cuda()
-
-        print(patch)
         
         # MAKE RANDOMIZER
         x_pad = background_img.size(dim=2) - patch.size(dim=2)
@@ -95,7 +93,7 @@ def image_paste(batch_count, background_img_stack, patch_stack):
         mask = torch.zeros(background_img.size()).cuda()
         mask = mask + new_patch
         mask.clamp_(0, 1)
-        mask_stack.append(mask[0])
+        mask_stack.append(mask[0].unsqueeze(0))
 
         output = (1 - mask) * background_img + (mask * new_patch)
         output_stack.append(output)
