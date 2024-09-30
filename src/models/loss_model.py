@@ -50,7 +50,7 @@ class AdversarialLoss(nn.Module):
         min_distances = torch.min(distances, dim = 1).values() # finds min distance value for each pixel
         min_distances_final = min_distances.view(new_patch.shape[0], new_patch.shape[1], 1).repeat(1, 1, 3) # reshapes back to (H, W, C)
         loss = min_distances_final.permute(0, 1, 2) # back to (C, H, W)
-        target_tensor = torch.zeros_like(self.patch) # assuming target minimum distance is 0
+        target_tensor = torch.zeros_like(self.patch).requires_grad_().cuda() # assuming target minimum distance is 0
         return nn.L1loss(reduction='sum')(loss, target_tensor)
          
     
