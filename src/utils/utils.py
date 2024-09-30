@@ -73,12 +73,16 @@ def untransform(img, endpoints):
     untransformed_mask = perspective(img=img, startpoints=endpoints, endpoints=startpoints)
     return untransformed_mask
 
-def image_paste(batch_count, background_img_stack, patch_stack):
+def image_paste(batch_count, background_img_stack, patch_stack, tiny_mask_stack):
     output_stack = []
     mask_stack = []
     for batch_i in range(batch_count):
         background_img = background_img_stack[batch_i].cuda()
         patch = patch_stack[batch_i][:3].cuda()
+        tiny_mask = tiny_mask_stack[batch_i][:3].cuda()
+        tiny_mask = tiny_mask / 255
+        tiny_mask.to(torch.int)
+        patch = patch * tiny_mask
         
         # MAKE RANDOMIZER
         x_pad = background_img.size(dim=2) - patch.size(dim=2)
