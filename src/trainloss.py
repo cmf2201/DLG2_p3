@@ -14,7 +14,7 @@ from utils.dataloader import LoadFromImageFile
 from utils.utils import *
 from tqdm import tqdm
 import warnings
-from PIL import Image
+from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 
 warnings.simplefilter('ignore')
@@ -60,6 +60,7 @@ def main():
     train_set = LoadFromImageFile(
         args.data_root,
         args.train_list,
+        mask_path=args.mask_path,
         seed=args.seed,
         train=True,
         monocular=True,
@@ -78,26 +79,28 @@ def main():
 
     # Transforms
     transforms = v2.Compose([
-        v2.RandomPerspective(),
         v2.RandomResize(30,70),
-        v2.RandomRotation((-15,15))
-        # v2.RandomPhotometricDistort()
+        v2.RandomPerspective(),
+        v2.RandomRotation(degrees=(-15,15)),
+        v2.RandomPhotometricDistort()
     ])
 
     print('===============================')
 
     # Patch and Mask
     # Initialize a random patch image, resize to fix within training images
-    patch_cpu = torchvision.io.read_image(args.patch_path).type(torch.float32)
-    patch_cpu = v2.Resize(size=(56,56))(patch_cpu).requires_grad_()
-    mask_cpu = torchvision.io.read_image(args.mask_path).type(torch.float32)
-    mask_cpu = v2.Resize(size=(56,56))(mask_cpu).requires_grad_()
+    patch_cpu = torchvision.io.read_image(args.patch_path)
+    mask_cpu = torchvision.io.read_image(args.mask_path)
+    # mask_cpu = v2.Resize(size=(56,56))(mask_cpu).requires_grad_()
     
     for i in range(20):
-        print(f"patch:{patch_cpu}")
-        img = transforms(patch_cpu)
-        img = to_image(img)
-        img.save("test.png")
+        img = to_image(patch_cpu)
+        img.convert("RGBA")
+        img = Image.composite(img,img,to_image(mask_cpu).convert("L"))
+        # img = transforms(patch_cpu)
+        # img = to_image(img.detach())
+
+        img.save(f"distortions/test{i}.png")
     
     # Optimizer
     # pass the patch to the optimizer

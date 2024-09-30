@@ -33,11 +33,12 @@ class BaseDataset(Dataset):
 
 
 class LoadFromImageFile(BaseDataset):
-    def __init__(self, data_path, filenames_file, seed=None, train=True, transform=None, monocular=True, extension=None):
+    def __init__(self, data_path, filenames_file, mask_path=None, seed=None, train=True, transform=None, monocular=True, extension=None):
         super(LoadFromImageFile, self).__init__(filenames_file)
         np.random.seed(seed)
         random.seed(seed)
         self.root = data_path
+        self.mask_path = mask_path
         self.transform = transform
         self.monocular = monocular
         self.extension = extension
