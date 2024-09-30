@@ -26,7 +26,7 @@ parser.add_argument('--print_file', type=str, default='Src/list/printable30value
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=16)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=4)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=20)
@@ -55,7 +55,28 @@ def main():
 
 
     # setup your torchvision/anyother transforms here. This is for adding noise/perspective transforms and other changes to the background
-    train_transform = None
+    
+    # Transforms
+    def transforms(patch, mask):
+        # Random size
+        size_ran = (30,70)
+        rand_size = random.randint(*size_ran)
+        patch = v2.Resize(rand_size)(patch)
+        mask = v2.Resize(rand_size)(mask)
+
+        # Random Perspective
+        patch,mask = perspective_transformer(patch,mask)
+
+        # Random Rotation
+        rotate_range = (-15,15)
+        rand_rotate = random.randint(*rotate_range)
+        patch = v2.functional.rotate(patch,rand_rotate)
+        mask = v2.functional.rotate(mask,rand_rotate)
+
+        #Photometirc Distortional
+        patch = v2.RandomPhotometricDistort()(patch)
+
+        return patch,mask
     
     train_set = LoadFromImageFile(
         args.data_root,
@@ -64,7 +85,7 @@ def main():
         seed=args.seed,
         train=True,
         monocular=True,
-        transform=train_transform,
+        transform=None,
         extension=".png"
     )
 
@@ -77,14 +98,6 @@ def main():
         drop_last=True
     )
 
-    # Transforms
-    transforms = v2.Compose([
-        v2.RandomResize(30,70),
-        v2.RandomPerspective(),
-        v2.RandomRotation(degrees=(-15,15)),
-        v2.RandomPhotometricDistort()
-    ])
-
     print('===============================')
 
     # Patch and Mask
@@ -93,14 +106,13 @@ def main():
     mask_cpu = torchvision.io.read_image(args.mask_path)
     # mask_cpu = v2.Resize(size=(56,56))(mask_cpu).requires_grad_()
     
-    for i in range(20):
-        img = to_image(patch_cpu)
-        img.convert("RGBA")
-        img = Image.composite(img,img,to_image(mask_cpu).convert("L"))
-        # img = transforms(patch_cpu)
-        # img = to_image(img.detach())
+    # for i in range(10):
+    #     img, mask = transforms(patch_cpu,mask_cpu)
+    #     img = to_image(img)
+    #     mask = to_image(mask)
 
-        img.save(f"distortions/test{i}.png")
+    #     img.save(f"distortions/patch{i}.png")
+    #     mask.save(f"distortions/mask{i}.png")
     
     # Optimizer
     # pass the patch to the optimizer
@@ -127,17 +139,65 @@ def main():
 
         for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch {epoch}', total=len(train_loader), leave=False):
             with torch.autograd.detect_anomaly():
-                #sample.permute(0, 3, 1, 2)
+                
+                # send our patch, background, and mask to GPU
                 sample = to_cuda_vars(sample)  # send item to gpu
-                
-                sample.update(models.get_original_disp(sample))  # get non-attacked disparity
-
-
-
-                
-                img = sample['left']
                 patch, mask = patch_cpu.cuda(), mask_cpu.cuda()
 
+                # apply our transformations TODO:(do per batch, make a list)
+                patchs = []
+                masks = []
+                for i in range(args.batch_size):
+                    p,m = transforms(patch,mask)
+                    patchs.append(p)
+                    masks.append(m)
+                
+                ## DEBUGGING CODE
+                # for i,patch,mask in zip(range(args.batch_size),patchs,masks):
+                #     patch = to_image(patch)
+                #     mask = to_image(mask)
+                #     patch.save(f"PatchCheckpoints/patch{i}.png")
+                #     mask.save(f"PatchCheckpoints/mask{i}.png")
+                
+
+                # TODO:CHAD apply our patch to image (needs to be done per batch)
+                sample.update({'patch':sample['left']})
+
+                # Run image through Depth Map, as well as original image.
+                sample.update(models.get_original_disp(sample))
+                sample.update(models.get_disp_mask(sample))
+                # 'original_disparity'
+                # 'disparity'
+
+                # Loss function on disparity
+
+                # Take original image, and put target depth over the patch.
+                Actual = sample['disparity']
+                Target = sample['original_disparity']
+                for batch in range(args.batch_size):
+                    Target[batch] = Target[batch]## Here update the target batch with the target depth where the patch is
+                print(f"size:{Target.size()}")
+                for i,act in zip(range(args.batch_size),torch.split(Actual,args.batch_size,dim=0)):
+                    print(f"size:{act.size()}")
+                    act.squeeze()
+                    act = to_image(act)
+                    act.save(f"PatchCheckpoints/act{i}.png")
+                # for batch in args.batch_size:
+                break
+
+                # target_depths = target_depths * target_depth * 
+                # target_depths = torch.stack(list_of_masks).cuda().type(torch.float32).requires_grad_()
+                # target_depths = target_depths / 255 * target_depth
+                print(f"gradient:{patch_cpu.grad}")
+                # Expected = target_depths
+                break
+
+                l1_loss = torch.nn.L1Loss()
+                loss = l1_loss(Expected,Actual)
+                
+
+
+                # sample.update(models.get_original_disp(sample))  # get non-attacked disparity
                 # orig = original_disp[0]
                 # orig = to_image(orig)
 
@@ -220,16 +280,6 @@ def main():
 
                     # visual_patch_disp = to_image(disp_of_patch)
                     # visual_patch_disp.save(os.path.join(directory,f"after_mask{i}.png"))
-                disp_tensor = torch.stack(list_of_disp_of_patch).cuda().requires_grad_()
-                Expected = disp_tensor
-                target_depth = 10/255
-                target_depths = torch.stack(list_of_masks).cuda().type(torch.float32).requires_grad_()
-                target_depths = target_depths / 255 * target_depth
-                print(f"gradient:{patch_cpu.grad}")
-                Actual = target_depths
-
-                l1_loss = torch.nn.L1Loss()
-                loss = l1_loss(Expected,Actual)
 
 
 
