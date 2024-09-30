@@ -60,7 +60,7 @@ def perspective_transformer(patch, mask):
     perspective_patch = perspective(img=patch, startpoints=startpoints,endpoints=endpoints)
     perspective_mask = perspective(img=mask, startpoints=startpoints,endpoints=endpoints)
 
-    return (perspective_patch, perspective_mask, endpoints)
+    return perspective_patch, perspective_mask
 
 def untransform(img, endpoints):
     size = img.size()[1:3] # 56, 56

@@ -180,3 +180,5 @@ Testing/generated/*.png
 *.npy
 generated/
 Transform/
+PatchCheckpoints/
+distortions/

@@ -45,7 +45,7 @@ class AdversarialModels():
         #.permute(0,3,1,2)
         if 'distill' in self.args.model:
             distill_disp = self.fix_distill(sample['left']) / 255
-            add_sample.update({"original_distill_disp": distill_disp.detach()})
+            add_sample.update({"original_disparity": distill_disp.detach()})
         return add_sample
 
 
@@ -54,7 +54,7 @@ class AdversarialModels():
         ## Get the disparity mask of the given sample.
         add_sample = {}
         distill_disp = self.fix_distill(sample['patch']) / 255
-        add_sample.update({'distill_mask': distill_disp.detach()})
+        add_sample.update({'disparity': distill_disp.detach()})
         return add_sample
 
 
