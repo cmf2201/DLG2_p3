@@ -1,6 +1,8 @@
 import torch
 import os
 from torch import nn
+import torchvision
+import torchvision.transforms.functional
 
 class AdversarialLoss(nn.Module):
     def __init__(self, args):
@@ -19,9 +21,9 @@ class AdversarialLoss(nn.Module):
         self.depth = depth
         self.patch = depth
         self.disp_loss = self.calc_disp_loss()
-        # self.nps_loss = self.calc_nps_loss()
-        # self.tv_loss = self.calc_tv_loss()
-        loss = self.disp_loss ## TODO:FIX WITH OTHERS LOSSES
+        self.nps_loss = self.calc_nps_loss()
+        self.tv_loss = self.calc_tv_loss()
+        loss = self.disp_loss + 0.4 * self.nps_loss + 0.3 * self.tv_loss
         return loss.mean()
     
 
@@ -44,18 +46,32 @@ class AdversarialLoss(nn.Module):
     # Non-printability score loss TODO: Implement
     def calc_nps_loss(self):
         # assuming self.patch is patch.png 3x56x56
-        # new_patch = self.patch.permute(1,2,0)
-        
-        self.print_colors 
-        # [[r,g,b],
-        # [r,g,b],
-        # ... 
-        # [r,g,b]]
-        return self.patch
+        new_patch = self.patch.permute(1,2,0) # now (H, W, C)
+        squeezed_patch = new_patch.reshape(-1,3) # shape = (H*W, 3)
+        distances = torch.cdist(squeezed_patch.float(), self.print_colors) # calculates Euclidean distance between each color value for each pixel
+        min_distances = torch.min(distances, dim = 1).values() # finds min distance value for each pixel
+        min_distances_final = min_distances.view(new_patch.shape[0], new_patch.shape[1], 1).repeat(1, 1, 3) # reshapes back to (H, W, C)
+        loss = min_distances_final.permute(0, 1, 2) # back to (C, H, W)
+        target_tensor = torch.zeros_like(self.patch).requires_grad_().cuda() # assuming target minimum distance is 0
+        return nn.L1Loss(reduction='mean')(loss, target_tensor)
+         
     
     # Total Variation Loss TODO: Implement
     def calc_tv_loss(self):
-        return self.patch
+        # assuming patch is 3*H*W
+        patch = self.patch
+        patch_compare_x = self.patch
+        patch_compare_y = self.patch
+
+        patch_compare_x = nn.functional.pad(patch_compare_x, (1,0,0,0), "constant", 0)
+        patch_compare_x = torchvision.transforms.functional.crop(patch_compare_x, 0, 0, patch.size(dim=2), patch.size(dim=1))
+
+        patch_compare_y = nn.functional.pad(patch_compare_y, (0,0,1,0), "constant", 0)
+        patch_compare_y = torchvision.transforms.functional.crop(patch_compare_y, 0, 0, patch.size(dim=2), patch.size(dim=1))
+
+        tensor_of_error = torch.sqrt(torch.square(patch - patch_compare_x) + torch.square(patch - patch_compare_y)).cuda()
+        tensor_targer = torch.zeros_like(tensor_of_error).requires_grad_().cuda()
+        return nn.L1Loss(reduction='mean')(tensor_of_error, tensor_targer)
     
     def calc_disp_loss(self):
         return nn.L1Loss(reduction='sum')(self.depth, (self.target))
