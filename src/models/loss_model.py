@@ -21,9 +21,9 @@ class AdversarialLoss(nn.Module):
         self.depth = depth
         self.patch = depth
         self.disp_loss = self.calc_disp_loss()
-        # self.nps_loss = self.calc_nps_loss()
-        # self.tv_loss = self.calc_tv_loss()
-        loss = self.disp_loss ## TODO:FIX WITH OTHERS LOSSES
+        self.nps_loss = self.calc_nps_loss()
+        self.tv_loss = self.calc_tv_loss()
+        loss = self.disp_loss + 0.4 * self.nps_loss + 0.3 * self.tv_loss
         return loss.mean()
     
 
