@@ -21,8 +21,8 @@ class AdversarialLoss(nn.Module):
         self.depth = depth
         self.target = target
         self.disp_loss = self.calc_disp_loss()
-        self.nps_loss = self.calc_nps_loss() * 0.4
-        self.tv_loss = self.calc_tv_loss() * 0.3
+        self.nps_loss = self.calc_nps_loss() * 0.02
+        self.tv_loss = self.calc_tv_loss() * 0.03
         loss = self.disp_loss + self.nps_loss + self.tv_loss
         return loss.mean()
     
