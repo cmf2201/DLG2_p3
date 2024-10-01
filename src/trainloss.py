@@ -36,7 +36,7 @@ parser.add_argument('--patch_shape', type=str, help='circle or square', default=
 parser.add_argument('--patch_path', type=str, help='Initialize patch from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
 parser.add_argument('--mask_path', type=str, help='Initialize mask from file', default="/home/ctnguyen/neural_nemesis/DLG2_p3/src/baseline_patch.png")
 parser.add_argument('--colors_path', type=str, help='Directory of printable colors', default="/home/cmfrench/RBE474X/DLG2_p3/src/Src/list/printable30values.txt")
-parser.add_argument('--target_disp', type=int, default=200)
+parser.add_argument('--target_disp', type=int, default=70)
 parser.add_argument('--model', nargs='*', type=str, default='distill', choices=['distill'], help='Model architecture')
 parser.add_argument('--name', type=str, help='output directory', default="result")
 args = parser.parse_args()
@@ -163,23 +163,31 @@ def main():
                 #     patch.save(f"PatchCheckpoints/patch{i}.png")
                 #     mask.save(f"PatchCheckpoints/mask{i}.png")
 
-                patched_imgs, big_masks = image_paste(args.batch_size, sample['left'].float()/255, patchs, masks)
-                sample.update({'patch':patched_imgs*255})
+                patched_imgs, big_masks = image_paste(args.batch_size, sample['left'], patchs, masks)
+                sample.update({'patch':patched_imgs})
 
-                # for i,patch_t,mask_t in zip(range(args.batch_size),torch.tensor_split(patched_imgs,args.batch_size,dim=0),torch.tensor_split(big_masks,args.batch_size,dim=0)):
-                #     print(f"size:{patch_t.size()}")
+                # for i,patch_t,mask_t in zip(range(args.batch_size),torch.tensor_split(patched_imgs,args.batch_size,dim=0),big_masks):
                 #     patch_t = patch_t.squeeze()
                 #     mask_t = mask_t.squeeze()
                 #     patch_t = to_image(patch_t)
                 #     mask_t = to_image(mask_t)
-                    # patch_t.save(f"PatchCheckpoints/patch{i}.png")
-                    # mask_t.save(f"PatchCheckpoints/mask{i}.png")
+                #     patch_t.save(f"PatchCheckpoints/patch{i}.png")
+                #     mask_t.save(f"PatchCheckpoints/mask{i}.png")
 
                 # Run image through Depth Map, as well as original image.
                 sample.update(models.get_original_disp(sample))
                 sample.update(models.get_disp_mask(sample))
                 # 'original_disparity'
                 # 'disparity'
+
+                # for i,attack,nonatck in zip(range(args.batch_size),torch.tensor_split(sample['disparity'],args.batch_size,dim=0),torch.tensor_split(sample['original_disparity'],args.batch_size,dim=0)):
+                #     # print(f"size:{patch_t.size()}")
+                #     attack = attack.squeeze()
+                #     nonatck = nonatck.squeeze()
+                #     attack = to_image(attack)
+                #     nonatck = to_image(nonatck)
+                #     attack.save(f"PatchCheckpoints/attack{i}.png")
+                #     nonatck.save(f"PatchCheckpoints/nonatck{i}.png")
 
                 # Loss function on disparity
 
@@ -206,7 +214,7 @@ def main():
                 #     act = to_image(act)
                 #     act.save(f"PatchCheckpoints/act{i}.png")
                 #     exp.save(f"PatchCheckpoints/exp{i}.png")
-                # for batch in args.batch_size:
+
                 loss = loss_md.forward(Actual,Target,patch)
 
                 ep_tv_loss += loss_md.tv_loss.detach().cpu().numpy()
@@ -239,6 +247,7 @@ def main():
         print('EPOCH LOSS: ', ep_loss)
         print(' DISP LOSS: ', ep_disp_loss)
         print('  NPS LOSS: ', ep_nps_loss)
+        print('   TV LOSS: ', ep_tv_loss)
         np.save(save_path + '/epoch_{}_patch.npy'.format(str(epoch)), patch_cpu.data.numpy())
         np.save(save_path + '/epoch_{}_mask.npy'.format(str(epoch)), mask_cpu.data.numpy())
 
