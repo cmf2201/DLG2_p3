@@ -102,5 +102,5 @@ def image_paste(batch_count, background_img_stack, patch_stack, tiny_mask_stack)
         output_stack.append(output)
 
     output_stack = torch.stack(output_stack, dim=0)
-    mask_stack = torch.stack(mask_stack, dim=0)
+    # mask_stack = torch.stack(mask_stack, dim=0)
     return output_stack, mask_stack
