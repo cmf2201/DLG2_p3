@@ -26,7 +26,7 @@ parser.add_argument('--print_file', type=str, default='Src/list/printable30value
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=4)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=60)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=20)
@@ -65,18 +65,18 @@ def main():
         mask = v2.Resize(rand_size)(mask)
 
         # Random Perspective
-        patch,mask = perspective_transformer(patch,mask)
+        patch2,mask2 = perspective_transformer(patch,mask)
 
         # Random Rotation
         rotate_range = (-15,15)
         rand_rotate = random.randint(*rotate_range)
-        patch = v2.functional.rotate(patch,rand_rotate)
-        mask = v2.functional.rotate(mask,rand_rotate)
+        patch3 = v2.functional.rotate(patch2,rand_rotate)
+        mask3 = v2.functional.rotate(mask2,rand_rotate)
 
         #Photometirc Distortional
         # patch = v2.RandomPhotometricDistort()(patch)
 
-        return patch,mask
+        return patch3,mask3
     
     train_set = LoadFromImageFile(
         args.data_root,
@@ -155,18 +155,14 @@ def main():
                     masks.append(m)
                 
                 ## DEBUGGING CODE
-                for i,patch,mask in zip(range(args.batch_size),patchs,masks):
-                    patch = to_image(patch)
-                    mask = to_image(mask)
-                    patch.save(f"PatchCheckpoints/patch{i}.png")
-                    mask.save(f"PatchCheckpoints/mask{i}.png")
-                
-
-                # apply our patch to image
+                # for i,patch,mask in zip(range(args.batch_size),patchs,masks):
+                #     patch = to_image(patch)
+                #     mask = to_image(mask)
+                #     patch.save(f"PatchCheckpoints/patch{i}.png")
+                #     mask.save(f"PatchCheckpoints/mask{i}.png")
 
                 patched_imgs, big_masks = image_paste(args.batch_size, sample['left'].float()/255, patchs, masks)
-                sample.update({'patch':(patched_imgs*255).to(torch.uint8)})
-                sample.update({'masks':big_masks})
+                sample.update({'patch':patched_imgs*255})
 
                 # for i,patch_t,mask_t in zip(range(args.batch_size),torch.tensor_split(patched_imgs,args.batch_size,dim=0),torch.tensor_split(big_masks,args.batch_size,dim=0)):
                 #     print(f"size:{patch_t.size()}")
@@ -198,38 +194,32 @@ def main():
                 Target = torch.stack(Target_list,dim=0)
             
 
-                for i,act,exp in zip(range(args.batch_size),torch.tensor_split(Actual,args.batch_size,dim=0),torch.tensor_split(Target,args.batch_size,dim=0)):
-                    loss = Target[i] - Actual[i]
-                    loss = to_image(loss)
-                    loss.save(f"PatchCheckpoints/loss{i}.png")
-                    act = act.squeeze()
-                    exp = exp.squeeze()
-                    exp = to_image(exp)
-                    act = to_image(act)
-                    act.save(f"PatchCheckpoints/act{i}.png")
-                    exp.save(f"PatchCheckpoints/exp{i}.png")
+                # for i,act,exp in zip(range(args.batch_size),torch.tensor_split(Actual,args.batch_size,dim=0),torch.tensor_split(Target,args.batch_size,dim=0)):
+                #     loss = Target[i] - Actual[i]
+                #     loss = to_image(loss)
+                #     loss.save(f"PatchCheckpoints/loss{i}.png")
+                #     act = act.squeeze()
+                #     exp = exp.squeeze()
+                #     exp = to_image(exp)
+                #     act = to_image(act)
+                #     act.save(f"PatchCheckpoints/act{i}.png")
+                #     exp.save(f"PatchCheckpoints/exp{i}.png")
                 # for batch in args.batch_size:
-
-                # target_depths = target_depths * target_depth * 
-                # target_depths = torch.stack(list_of_masks).cuda().type(torch.float32).requires_grad_()
-                # target_depths = target_depths / 255 * target_depth
-                # Expected = target_depths
 
                 l1_loss = torch.nn.L1Loss()
                 loss = l1_loss(Target,Actual)
 
+                ep_disp_loss += loss.detach().cpu().numpy()
+                ep_loss += loss.detach().cpu().numpy()
                 
                 loss.backward()
-                print(f"gradient:{patch_cpu.grad}")
-
-                break
                 optimizer.step()
                 optimizer.zero_grad()
                 models.distill.zero_grad()
 
                 patch_cpu.data.clamp_(0, 255)  # keep patch in image range
 
-                del patch_t, loss, Actual, Expected, target_depths, disp_tensor, sample# nps_loss, tv_loss
+                del loss, Actual, Original, Target, patched_imgs, big_masks, patchs, masks, patch, mask, sample
                 torch.cuda.empty_cache()
 
         ep_disp_loss = ep_disp_loss/len(train_loader)

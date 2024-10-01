@@ -49,12 +49,11 @@ class AdversarialModels():
         return add_sample
 
 
-    @make_nograd_func
     def get_disp_mask(self, sample):
         ## Get the disparity mask of the given sample.
         add_sample = {}
-        distill_disp = self.fix_distill(sample['patch']) / 255
-        add_sample.update({'disparity': distill_disp.detach()})
+        distill_disp = self.distill(sample['patch']) / 255
+        add_sample.update({'disparity': distill_disp})
         return add_sample
 
 
