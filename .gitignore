@@ -182,3 +182,9 @@ generated/
 Transform/
 distortions/
 PatchCheckpoints/
+video_pass.py
+videoimgs.zip
+After/
+After_disp/
+Before/
+Before_disp/
