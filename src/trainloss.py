@@ -122,6 +122,8 @@ def main():
     optimizer = torch.optim.Adam([patch_cpu], lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=50)
 
+    # Loss
+    loss_md = AdversarialLoss(args)
 
     # Attacked Models
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cuda:2')
@@ -205,11 +207,11 @@ def main():
                 #     act.save(f"PatchCheckpoints/act{i}.png")
                 #     exp.save(f"PatchCheckpoints/exp{i}.png")
                 # for batch in args.batch_size:
+                loss = loss_md.forward(Actual,Target,patch)
 
-                l1_loss = torch.nn.L1Loss()
-                loss = l1_loss(Target,Actual)
-
-                ep_disp_loss += loss.detach().cpu().numpy()
+                ep_tv_loss += loss_md.tv_loss.detach().cpu().numpy()
+                ep_nps_loss += loss_md.nps_loss.detach().cpu().numpy()
+                ep_disp_loss += loss_md.disp_loss.detach().cpu().numpy()
                 ep_loss += loss.detach().cpu().numpy()
                 
                 loss.backward()
@@ -223,8 +225,8 @@ def main():
                 torch.cuda.empty_cache()
 
         ep_disp_loss = ep_disp_loss/len(train_loader)
-        # ep_nps_loss = ep_nps_loss/len(train_loader)
-        # ep_tv_loss = ep_tv_loss/len(train_loader)
+        ep_nps_loss = ep_nps_loss/len(train_loader)
+        ep_tv_loss = ep_tv_loss/len(train_loader)
         ep_loss = ep_loss/len(train_loader)
         scheduler.step(ep_loss)
 
@@ -236,8 +238,7 @@ def main():
         print('EPOCH TIME: ', format_time(int(ep_time)))
         print('EPOCH LOSS: ', ep_loss)
         print(' DISP LOSS: ', ep_disp_loss)
-        # print('  NPS LOSS: ', ep_nps_loss)
-        # print('   TV LOSS: ', ep_tv_loss)
+        print('  NPS LOSS: ', ep_nps_loss)
         np.save(save_path + '/epoch_{}_patch.npy'.format(str(epoch)), patch_cpu.data.numpy())
         np.save(save_path + '/epoch_{}_mask.npy'.format(str(epoch)), mask_cpu.data.numpy())
 
