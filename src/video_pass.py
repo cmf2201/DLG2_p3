@@ -54,27 +54,28 @@ def to_heatmap(tensor,fname):
             plt.clf()
 
 
-before_folder = '/home/cmfrench/RBE474X/DLG2_p3/src/Before'
-after_folder = '/home/cmfrench/RBE474X/DLG2_p3/src/After'
+# before_folder = '/home/cmfrench/RBE474X/DLG2_p3/src/Before'
+# after_folder = '/home/cmfrench/RBE474X/DLG2_p3/src/After'
 
-before_files = os.listdir(before_folder)
-after_files = os.listdir(after_folder)
+# before_files = os.listdir(before_folder)
+# after_files = os.listdir(after_folder)
 
 models = AdversarialModels(args)
 models.load_ckpt()
 
-all_before_images = []
-for image_name in before_files:
-    image = read_image(before_folder + '/' + image_name)
-    all_before_images.append(image)
+# all_before_images = []
+# for image_name in before_files:
+#     image = read_image(before_folder + '/' + image_name)
+#     all_before_images.append(image)
 
-all_after_images = []
-for image_name in after_files:
-    image = read_image(after_folder + '/' + image_name)
-    all_after_images.append(image)
+# all_after_images = []
+# for image_name in after_files:
+#     image = read_image(after_folder + '/' + image_name)
+#     all_after_images.append(image)
 
+all_before_images = [read_image('/home/skushwaha/DLG2_p3/src/attacked_image.png')]
 before_stack = torch.stack(all_before_images)
-after_stack = torch.stack(all_after_images)
+# after_stack = torch.stack(all_after_images)
 
 for image_count in range(before_stack.size(dim=0)):
     single_image = torch.unsqueeze(before_stack[image_count], dim=0).cuda()
@@ -83,15 +84,15 @@ for image_count in range(before_stack.size(dim=0)):
     original_disp_dict = models.get_original_disp(sample)
     disp_tensor = original_disp_dict["original_disparity"][0]
     image_count_string = str(image_count)
-    to_heatmap(disp_tensor, '/home/cmfrench/RBE474X/DLG2_p3/src/Before_disp/' + (4 - len(image_count_string)) * '0' + image_count_string + '.png')
+    to_heatmap(disp_tensor, '/home/skushwaha/DLG2_p3/src/Before_disp/' + (4 - len(image_count_string)) * '0' + image_count_string + '.png')
     del single_image, sample, original_disp_dict, disp_tensor
 
-for image_count in range(after_stack.size(dim=0)):
-    single_image = torch.unsqueeze(after_stack[image_count], dim=0).cuda()
-    single_image = v2.Resize(size=(256,512))(single_image)
-    sample = {'left':single_image.float() / 255}
-    original_disp_dict = models.get_original_disp(sample)
-    disp_tensor = original_disp_dict["original_disparity"][0]
-    image_count_string = str(image_count)
-    to_heatmap(disp_tensor, '/home/cmfrench/RBE474X/DLG2_p3/src/After_disp/' + (4 - len(image_count_string)) * '0' + image_count_string + '.png')
-    del single_image, sample, original_disp_dict, disp_tensor
+# for image_count in range(after_stack.size(dim=0)):
+#     single_image = torch.unsqueeze(after_stack[image_count], dim=0).cuda()
+#     single_image = v2.Resize(size=(256,512))(single_image)
+#     sample = {'left':single_image.float() / 255}
+#     original_disp_dict = models.get_original_disp(sample)
+#     disp_tensor = original_disp_dict["original_disparity"][0]
+#     image_count_string = str(image_count)
+#     to_heatmap(disp_tensor, '/home/cmfrench/RBE474X/DLG2_p3/src/After_disp/' + (4 - len(image_count_string)) * '0' + image_count_string + '.png')
+#     del single_image, sample, original_disp_dict, disp_tensor

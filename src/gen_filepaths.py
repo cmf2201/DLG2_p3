@@ -37,7 +37,7 @@ def write_to_file(file_paths, output_file):
             f.write(f"{line}\n")
 
 # Define folder path and extension
-folder_path = "/home/cmfrench/RBE474X/DLG2_p3/src/dataset/"
+folder_path = "/home/skushwaha/DLG2_p3/src/Dataset/"
 extension = ".png"
 
 # Get all .png files in the folder and subfolders that include 'image_02' in their directory path
@@ -47,8 +47,8 @@ paths = get_files_with_extension(folder_path, extension)
 train_files, test_files, val_files = split_data(paths)
 
 # Write the file lists to their respective text files
-write_to_file(train_files, '/home/cmfrench/RBE474X/DLG2_p3/src/Src/list/eigen_train_list.txt')
-write_to_file(test_files, '/home/cmfrench/RBE474X/DLG2_p3/src/Src/list/eigen_test_list.txt')
-write_to_file(val_files, '/home/cmfrench/RBE474X/DLG2_p3/src/Src/list/eigen_val_list.txt')
+write_to_file(train_files, '/home/skushwaha/DLG2_p3/src/Src/list/eigen_train_list.txt')
+write_to_file(test_files, '/home/skushwaha/DLG2_p3/src/Src/list/eigen_test_list.txt')
+write_to_file(val_files, '/home/skushwaha/DLG2_p3/src/Src/list/eigen_val_list.txt')
 
 print("Files have been successfully split and saved!")
