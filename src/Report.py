@@ -21,13 +21,13 @@ import matplotlib.pyplot as plt
 warnings.simplefilter('ignore')
 
 parser = argparse.ArgumentParser(description='Generating Adversarial Patches')
-parser.add_argument('--data_root', type=str, help='path to dataset', default='dataset')
+parser.add_argument('--data_root', type=str, help='path to dataset', default='Dataset')
 parser.add_argument('--train_list', type=str, default='Src/list/eigen_train_list.txt')
 parser.add_argument('--print_file', type=str, default='Src/list/printable30values.txt')
 parser.add_argument('--distill_ckpt', type=str, default="repository/release-StereoUnsupFt-Mono-pt-CK.ckpt")
 parser.add_argument('--height', type=int, help='input image height', default=256)
 parser.add_argument('--width', type=int, help='input image width', default=512)
-parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=60)
+parser.add_argument('-b', '--batch_size', type=int, help='mini-batch size', default=10)
 parser.add_argument('-j', '--num_threads', type=int, help='data loading workers', default=0)
 parser.add_argument('--lr', type=float, help='initial learning rate', default=1e-4)
 parser.add_argument('--num_epochs', type=int, help='number of total epochs', default=20)
@@ -155,8 +155,8 @@ for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch ', tot
         #     patch.save(f"PatchCheckpoints/patch{i}.png")
         #     mask.save(f"PatchCheckpoints/mask{i}.png")
 
-        patched_imgs, big_masks = image_paste(args.batch_size, sample['left'].float()/255, patchs, masks)
-        sample.update({'patch':patched_imgs*255})
+        patched_imgs, big_masks = image_paste(args.batch_size, sample['left'], patchs, masks)
+        sample.update({'patch':patched_imgs})
 
         # for i,patch_t,mask_t in zip(range(args.batch_size),torch.tensor_split(patched_imgs,args.batch_size,dim=0),torch.tensor_split(big_masks,args.batch_size,dim=0)):
         #     print(f"size:{patch_t.size()}")
@@ -207,6 +207,8 @@ for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch ', tot
             plt.imshow(image_array, cmap='plasma', interpolation='nearest')
             plt.colorbar() # Add a colorbar to interpret values
             plt.savefig(fname)
+            plt.clf() 
+
 
         def to_difference(tensor,fname):
             pilten = to_image(tensor)
@@ -214,6 +216,8 @@ for i_batch, sample in tqdm(enumerate(train_loader), desc=f'Running epoch ', tot
             plt.imshow(image_array, cmap='Reds', interpolation='nearest')
             plt.colorbar() # Add a colorbar to interpret values
             plt.savefig(fname)
+            plt.clf() 
+
 
 
         #original image + disparity
